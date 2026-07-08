@@ -17,27 +17,42 @@ The product idea: help people customize Codex in minutes instead of waiting for 
 
 ## Run locally
 
+If you are viewing this on GitHub and want to try the prototype on your own computer:
+
+```bash
+git clone https://github.com/ysun311/side-projects.git
+cd side-projects/codex-personalizer
+corepack enable
+pnpm install
+pnpm dev
+```
+
+Then open [http://localhost:3000](http://localhost:3000).
+
+You will need Node.js installed. If `pnpm` is unavailable after `corepack enable`, install it with:
+
+```bash
+npm install -g pnpm
+```
+
+### Local preview helper
+
+This repo also includes a helper script used during development:
+
 ```bash
 ./dev.sh
 ```
 
-Open the `Network` address printed in Terminal. On managed machines, `localhost`
-may be intercepted by a proxy even when the app is healthy.
+Open the `Network` address printed in Terminal. On managed machines, `localhost` may be intercepted by a proxy even when the app is healthy.
 
-The launcher builds and serves a production-style local preview so browser
-interactions do not depend on the development hot-reload connection. It uses
-your system `pnpm` when available and otherwise falls back to Codex's bundled
-copy.
+The launcher builds and serves a production-style local preview so browser interactions do not depend on the development hot-reload connection. It uses your system `pnpm` when available and otherwise falls back to Codex's bundled copy if you are running inside the same Codex desktop environment.
 
 ## Verify
 
 ```bash
-./dev.sh
 pnpm lint
 pnpm build
 ```
-
-If `pnpm` is not installed globally, `./dev.sh` falls back to the Codex-bundled runtime used in this development environment.
 
 ## Prototype scope
 
