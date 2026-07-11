@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Competitive Analysis Generator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #141414;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 0 16px 120px;
+    color: #fff;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 760px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0 14px;
+    border-bottom: 1px solid #2a2a2a;
+    position: sticky;
+    top: 0;
+    background: #141414;
+    z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .n-badge {
+    width: 38px; height: 38px;
+    background: #5B8DEF;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 900; color: #fff;
+    font-style: italic; letter-spacing: -1px;
+  }
+  .header-title { font-size: 15px; font-weight: 700; color: #fff; line-height: 1.2; }
+  .header-sub { font-size: 11px; color: #666; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 1px; }
+  .header-right { display: flex; gap: 8px; }
+  .header-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    background: #222; border: 1px solid #333; border-radius: 20px;
+    color: #aaa; font-size: 12px; cursor: pointer;
+  }
+  .header-btn:hover { background: #2a2a2a; }
+  .header-icon {
+    width: 30px; height: 30px;
+    background: #222; border: 1px solid #333; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px;
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar {
+    height: 3px; background: #222; margin: 0 0 0;
+    position: sticky; top: 69px; z-index: 99;
+  }
+  .progress-fill {
+    height: 100%; background: #5B8DEF;
+    transition: width 0.4s ease;
+  }
+  .step-label {
+    display: flex; justify-content: space-between;
+    padding: 10px 0 6px;
+    font-size: 11px;
+  }
+  .step-label-left { color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .step-label-right { color: #555; }
+
+  /* ── FEED ── */
+  .feed { display: flex; flex-direction: column; gap: 20px; padding-top: 20px; }
+
+  /* ── STEP CARD ── */
+  .step-card {
+    display: flex; gap: 14px;
+    opacity: 0; transform: translateY(16px);
+    animation: fadeUp 0.35s ease forwards;
+  }
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .avatar {
+    width: 36px; height: 36px; font-size: 22px;
+    flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card {
+    flex: 1;
+    background: #1e1e1e;
+    border: 1px solid #2e2e2e;
+    border-radius: 12px;
+    padding: 20px 22px;
+  }
+  .card h3 {
+    font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px;
+  }
+  .card .desc { font-size: 13px; color: #888; margin-bottom: 16px; line-height: 1.5; }
+
+  /* confirmed card */
+  .step-card.confirmed .card {
+    background: #181818; border-color: #252525;
+  }
+  .step-card.confirmed .card h3 { color: #666; }
+  .step-card.confirmed .answer-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #1e1e1e; border: 1px solid #333;
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 12px; color: #aaa; margin-top: 4px;
+  }
+
+  /* ── INPUTS ── */
+  .text-input {
+    width: 100%;
+    background: #141414; border: 1.5px solid #333;
+    border-radius: 8px; padding: 12px 14px;
+    color: #fff; font-size: 13px;
+    outline: none; transition: border-color 0.2s;
+  }
+  .text-input:focus { border-color: #555; }
+  .text-input::placeholder { color: #444; }
+
+  /* ── CHIP GROUPS ── */
+  .chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .chip {
+    padding: 6px 14px; border-radius: 20px;
+    border: 1px solid #333; background: #1a1a1a;
+    font-size: 12px; color: #888; cursor: pointer;
+    transition: all 0.15s; user-select: none;
+  }
+  .chip:hover { border-color: #555; color: #ccc; }
+  .chip.selected {
+    background: #16233d; border-color: #8b1a1f;
+    color: #ff6b6b;
+  }
+  .chip.selected::before { content: "✓  "; }
+  .chip-hint { font-size: 11px; color: #555; margin-bottom: 10px; }
+
+  /* ── DIMENSION ROWS ── */
+  .dim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 16px; }
+  .dim-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 7px;
+    border: 1px solid transparent; background: #1a1a1a;
+    cursor: pointer; transition: all 0.15s; user-select: none;
+    font-size: 12px; color: #888;
+  }
+  .dim-row:hover { background: #202020; color: #ccc; }
+  .dim-row.selected { background: #16233d; border-color: #8b1a1f; color: #ff9999; }
+  .dim-check { width: 16px; height: 16px; flex-shrink: 0; font-size: 11px; color: #5B8DEF; }
+  .dim-row.selected .dim-check::before { content: "✓"; }
+  .dim-row:not(.selected) .dim-check::before { content: "○"; color: #444; }
+  .dim-other {
+    grid-column: 1 / -1; color: #555; border: 1px dashed #2a2a2a;
+    background: #181818;
+  }
+
+  /* ── DEPTH OPTIONS ── */
+  .depth-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .depth-opt {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 14px 16px; border-radius: 8px;
+    border: 1.5px solid #2a2a2a; background: #1a1a1a;
+    cursor: pointer; transition: all 0.15s; user-select: none;
+  }
+  .depth-opt:hover { border-color: #3a3a3a; }
+  .depth-opt.selected { border-color: #5B8DEF; background: #16233d; }
+  .radio-dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid #444; margin-top: 1px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .depth-opt.selected .radio-dot { border-color: #5B8DEF; }
+  .radio-inner {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #5B8DEF; display: none;
+  }
+  .depth-opt.selected .radio-inner { display: block; }
+  .depth-title { font-size: 14px; font-weight: 600; color: #bbb; line-height: 1.3; }
+  .depth-opt.selected .depth-title { color: #fff; }
+  .depth-desc { font-size: 11px; color: #555; margin-top: 3px; line-height: 1.4; }
+
+  /* ── BUTTONS ── */
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+  .btn-primary {
+    flex: 1; padding: 11px 20px;
+    background: #5B8DEF; border: none; border-radius: 7px;
+    color: #fff; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .btn-primary:hover { background: #cc0812; }
+  .btn-primary:disabled { background: #5a0408; color: #8a4040; cursor: default; }
+  .btn-secondary {
+    padding: 11px 20px;
+    background: #1e1e1e; border: 1px solid #333; border-radius: 7px;
+    color: #888; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-secondary:hover { border-color: #555; color: #ccc; }
+
+  /* ── STATUS BADGE ── */
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .status-pill.ai { background: #0f1e30; border: 1px solid #1e4a70; color: #5ba3d9; }
+
+  /* ── COUNTER ── */
+  .counter { font-size: 11px; color: #555; margin-top: 10px; }
+
+  /* ── RECENT CHIPS LABEL ── */
+  .label-sm {
+    font-size: 10px; font-weight: 700; color: #444;
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
+  }
+
+  /* ── GENERATING ── */
+  .source-list { display: flex; flex-direction: column; gap: 0; margin: 12px 0; }
+  .source-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 14px; font-size: 12px;
+  }
+  .source-row:nth-child(odd) { background: #181818; }
+  .source-row:first-child { border-radius: 8px 8px 0 0; }
+  .source-row:last-child { border-radius: 0 0 8px 8px; }
+  .source-name { color: #888; }
+  .source-status.done { color: #4caf72; }
+  .source-status.running { color: #f0a030; }
+  .source-status.waiting { color: #444; }
+  .gen-progress-bg { height: 5px; background: #222; border-radius: 3px; margin: 14px 0 6px; }
+  .gen-progress-fill { height: 100%; background: #5B8DEF; border-radius: 3px; width: 38%; }
+
+  /* ── RESULTS ── */
+  .report-preview {
+    background: #181818; border: 1px solid #2a2a2a; border-radius: 8px;
+    padding: 16px; font-size: 12px; color: #999; line-height: 1.7;
+    max-height: 300px; overflow-y: auto;
+  }
+  .report-preview h4 { color: #ddd; font-size: 13px; margin: 12px 0 6px; }
+  .report-preview h4:first-child { margin-top: 0; }
+  .report-preview p { margin-bottom: 8px; }
+  .report-preview .tag {
+    display: inline-block; padding: 1px 6px; border-radius: 3px;
+    font-size: 10px; font-weight: 700; margin-right: 4px;
+  }
+  .tag.platform { background: #0d2035; color: #5ba3d9; }
+  .tag.analyst { background: #1a2010; color: #7ab55c; }
+  .report-export { display: flex; gap: 8px; margin-top: 14px; }
+
+  /* ── BOTTOM BAR ── */
+  .bottom-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #141414; border-top: 1px solid #242424;
+    padding: 12px 16px; display: flex; justify-content: center;
+    z-index: 200;
+  }
+  .bottom-inner {
+    width: 100%; max-width: 760px;
+    display: flex; gap: 10px; align-items: center;
+  }
+  .bottom-input {
+    flex: 1; background: #1e1e1e; border: 1px solid #2e2e2e;
+    border-radius: 24px; padding: 11px 18px;
+    color: #888; font-size: 13px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .bottom-input:focus { border-color: #444; color: #ccc; }
+  .bottom-input::placeholder { color: #444; }
+  .mic-btn {
+    width: 42px; height: 42px; background: #222; border: 1px solid #333;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px; flex-shrink: 0;
+  }
+  .send-btn {
+    width: 42px; height: 42px; background: #5B8DEF; border: none;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px; flex-shrink: 0;
+  }
+  .send-btn:hover { background: #cc0812; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="n-badge">CA</div>
+      <div>
+        <div class="header-title">Competitive Analysis Generator</div>
+        <div class="header-sub">Strategy &amp; Insights · AI-Powered Research</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="header-btn">🔍 Voice Off</div>
+      <div class="header-icon">↺</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <div class="step-label">
+    <span class="step-label-left" id="stepTabLabel">Getting Started</span>
+    <span class="step-label-right" id="stepTabRight">Step 1 of 4</span>
+  </div>
+
+  <!-- FEED -->
+  <div class="feed" id="feed"></div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <div class="bottom-inner">
+    <input class="bottom-input" placeholder="Type a message or click a button above..." readonly>
+    <div class="mic-btn">🎤</div>
+    <div class="send-btn">▶</div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+const state = {
+  currentStep: 0,
+  topic: '',
+  competitors: [],
+  dimensions: [],
+  depth: 'Standard',
+};
+
+const STEPS = ['Topic', 'Competitors', 'Dimensions', 'Depth'];
+const PROGRESS = [10, 35, 60, 85, 100];
+
+function updateProgress(step) {
+  document.getElementById('progressFill').style.width = PROGRESS[step] + '%';
+  document.getElementById('stepTabLabel').textContent = step < 4 ? STEPS[step] + ' Setup' : 'Analysis Running';
+  document.getElementById('stepTabRight').textContent = step < 4 ? `Step ${step + 1} of 4` : 'Generating...';
+}
+
+// ─────────────────────────────────────────────
+// RENDER HELPERS
+// ─────────────────────────────────────────────
+function appendCard(html, delay = 0) {
+  const feed = document.getElementById('feed');
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = html;
+  const card = wrapper.firstElementChild;
+  card.style.animationDelay = delay + 'ms';
+  feed.appendChild(card);
+  setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), delay + 50);
+  return card;
+}
+
+function confirmCard(cardEl, answerHtml) {
+  cardEl.classList.add('confirmed');
+  const inner = cardEl.querySelector('.card');
+  inner.innerHTML = `
+    <h3>${inner.querySelector('h3').textContent}</h3>
+    <div class="answer-pill">✓  ${answerHtml}</div>
+  `;
+}
+
+// ─────────────────────────────────────────────
+// STEP 1 — TOPIC
+// ─────────────────────────────────────────────
+function showStep1() {
+  updateProgress(0);
+  const card = appendCard(`
+    <div class="step-card">
+      <div class="avatar">🔍</div>
+      <div class="card">
+        <h3>Step 1 · What are you analyzing?</h3>
+        <p class="desc">Enter a product area, feature space, or strategic topic. The more specific, the better the research.</p>
+        <input class="text-input" id="topicInput" placeholder='e.g. "podcast discovery", "live sports streaming", "AI coding tools"'>
+        <div style="margin-top: 14px;">
+          <div class="label-sm">Recent topics</div>
+          <div class="chip-group" id="recentChips">
+            <div class="chip" onclick="selectRecent('genAI tools')">genAI tools</div>
+            <div class="chip" onclick="selectRecent('podcasts')">podcasts</div>
+            <div class="chip" onclick="selectRecent('live sports')">live sports</div>
+            <div class="chip" onclick="selectRecent('social video')">social video</div>
+            <div class="chip" onclick="selectRecent('multiview')">multiview</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-primary" id="step1Btn" onclick="submitStep1()" disabled>Next  →</button>
+        </div>
+        <div style="margin-top: 10px; font-size: 11px; color: #444; cursor: pointer;" onclick="skipStep1()">Skip — I'll describe later in the chat</div>
+      </div>
+    </div>
+  `);
+
+  const input = document.getElementById('topicInput');
+  const btn = document.getElementById('step1Btn');
+  input.addEventListener('input', () => {
+    btn.disabled = input.value.trim().length < 2;
+  });
+
+  window._step1Card = card;
+}
+
+function selectRecent(topic) {
+  document.getElementById('topicInput').value = topic;
+  document.getElementById('step1Btn').disabled = false;
+  document.querySelectorAll('#recentChips .chip').forEach(c => c.classList.remove('selected'));
+  event.target.classList.add('selected');
+}
+
+function skipStep1() {
+  state.topic = 'streaming & content discovery';
+  proceedFromStep1();
+}
+
+function submitStep1() {
+  const val = document.getElementById('topicInput').value.trim();
+  if (!val) return;
+  state.topic = val;
+  proceedFromStep1();
+}
+
+function proceedFromStep1() {
+  confirmCard(window._step1Card, state.topic);
+  state.currentStep = 1;
+  setTimeout(showStep2, 400);
+}
+
+// ─────────────────────────────────────────────
+// STEP 2 — COMPETITORS
+// ─────────────────────────────────────────────
+const SUGGESTED_COMPETITORS = {
+  'genAI tools': ['ChatGPT', 'Gemini', 'Copilot', 'Perplexity', 'Cursor', 'Mistral'],
+  'podcasts': ['Spotify', 'Apple Podcasts', 'YouTube', 'Amazon Music', 'iHeart'],
+  'live sports': ['ESPN+', 'Peacock', 'Amazon Prime', 'Apple TV+', 'Max'],
+  'social video': ['TikTok', 'Instagram Reels', 'YouTube Shorts', 'Snapchat', 'Pinterest'],
+  'multiview': ['Peacock', 'ESPN+', 'Max', 'Amazon Prime', 'Apple TV+'],
+  'default': ['YouTube', 'Spotify', 'TikTok', 'Instagram', 'Apple Podcasts', 'Amazon'],
+};
+
+function showStep2() {
+  updateProgress(1);
+  const topicKey = Object.keys(SUGGESTED_COMPETITORS).find(k =>
+    state.topic.toLowerCase().includes(k.toLowerCase())
+  ) || 'default';
+  const suggestions = SUGGESTED_COMPETITORS[topicKey];
+  window._selectedCompetitors = new Set(suggestions.slice(0, 3));
+
+  const chipsHtml = suggestions.map(s => `
+    <div class="chip ${window._selectedCompetitors.has(s) ? 'selected' : ''}" onclick="toggleCompetitor(this, '${s}')">${s}</div>
+  `).join('');
+
+  const card = appendCard(`
+    <div class="step-card">
+      <div class="avatar">🎯</div>
+      <div class="card">
+        <h3>Step 2 · Who are the competitors?</h3>
+        <div class="status-pill ai">✦  AI suggested — based on "${state.topic}"</div>
+        <p class="desc">Select the competitors to analyze. You can add your own too.</p>
+        <div class="chip-group" id="compChips">${chipsHtml}</div>
+        <input class="text-input" id="customComp" placeholder="+ Add a competitor (e.g. Twitch, Peacock...)" style="margin-bottom: 8px;">
+        <button class="btn-secondary" onclick="addCustomComp()" style="width:100%; margin-bottom:8px;">Add</button>
+        <div class="counter" id="compCounter">${window._selectedCompetitors.size} selected · select up to 8</div>
+        <div class="btn-row">
+          <button class="btn-secondary" onclick="goBack(1)">← Back</button>
+          <button class="btn-primary" onclick="submitStep2()">Next  →</button>
+        </div>
+      </div>
+    </div>
+  `);
+  window._step2Card = card;
+}
+
+function toggleCompetitor(el, name) {
+  if (window._selectedCompetitors.has(name)) {
+    window._selectedCompetitors.delete(name);
+    el.classList.remove('selected');
+  } else {
+    if (window._selectedCompetitors.size >= 8) return;
+    window._selectedCompetitors.add(name);
+    el.classList.add('selected');
+  }
+  document.getElementById('compCounter').textContent =
+    `${window._selectedCompetitors.size} selected · select up to 8`;
+}
+
+function addCustomComp() {
+  const val = document.getElementById('customComp').value.trim();
+  if (!val || window._selectedCompetitors.size >= 8) return;
+  window._selectedCompetitors.add(val);
+  const chip = document.createElement('div');
+  chip.className = 'chip selected';
+  chip.textContent = val;
+  chip.onclick = () => toggleCompetitor(chip, val);
+  document.getElementById('compChips').appendChild(chip);
+  document.getElementById('customComp').value = '';
+  document.getElementById('compCounter').textContent =
+    `${window._selectedCompetitors.size} selected · select up to 8`;
+}
+
+function submitStep2() {
+  state.competitors = [...window._selectedCompetitors];
+  if (!state.competitors.length) { state.competitors = ['YouTube', 'Spotify', 'TikTok']; }
+  confirmCard(window._step2Card, state.competitors.join(', '));
+  state.currentStep = 2;
+  setTimeout(showStep3, 400);
+}
+
+// ─────────────────────────────────────────────
+// STEP 3 — DIMENSIONS
+// ─────────────────────────────────────────────
+const ALL_DIMS = [
+  'Product features & feature parity',
+  'Pricing & monetization models',
+  'Discovery & user experience',
+  'Content strategy & formats',
+  'Market share & growth signals',
+  'Distribution & platform reach',
+  'Partnerships & ecosystem',
+  'Market positioning & branding',
+  'Strategic fit & investment trajectory',
+  'Geographic & international expansion',
+];
+
+function showStep3() {
+  updateProgress(2);
+  window._selectedDims = new Set(['Product features & feature parity', 'Pricing & monetization models', 'Discovery & user experience']);
+
+  const dimsHtml = ALL_DIMS.map((d, i) => `
+    <div class="dim-row ${window._selectedDims.has(d) ? 'selected' : ''}" onclick="toggleDim(this, '${d.replace(/'/g,"\\'")}')">
+      <div class="dim-check"></div>
+      <span>${i + 1}. ${d}</span>
+    </div>
+  `).join('');
+
+  const card = appendCard(`
+    <div class="step-card">
+      <div class="avatar">📐</div>
+      <div class="card">
+        <h3>Step 3 · What angles matter most?</h3>
+        <p class="desc">Select all that apply — ranked by relevance to <strong style="color:#ccc">${state.topic}</strong>. You can pick multiple.</p>
+        <div class="dim-grid" id="dimGrid">
+          ${dimsHtml}
+          <div class="dim-row dim-other" onclick="promptOtherDim()">
+            <div class="dim-check" style="color:#444">+</div>
+            <span>Other — type your own dimension</span>
+          </div>
+        </div>
+        <input class="text-input" id="otherDimInput" placeholder="Describe your own dimension..." style="display:none; margin-bottom: 8px;">
+        <div class="counter" id="dimCounter">${window._selectedDims.size} selected</div>
+        <div class="btn-row">
+          <button class="btn-secondary" onclick="goBack(2)">← Back</button>
+          <button class="btn-primary" onclick="submitStep3()">Next  →</button>
+        </div>
+        <div style="margin-top: 10px; font-size: 11px; color: #444; cursor: pointer;" onclick="submitStep3()">Skip — use AI defaults</div>
+      </div>
+    </div>
+  `);
+  window._step3Card = card;
+}
+
+function toggleDim(el, name) {
+  if (window._selectedDims.has(name)) {
+    window._selectedDims.delete(name);
+    el.classList.remove('selected');
+  } else {
+    window._selectedDims.add(name);
+    el.classList.add('selected');
+  }
+  document.getElementById('dimCounter').textContent = `${window._selectedDims.size} selected`;
+}
+
+function promptOtherDim() {
+  const inp = document.getElementById('otherDimInput');
+  inp.style.display = inp.style.display === 'none' ? 'block' : 'none';
+  if (inp.style.display === 'block') inp.focus();
+}
+
+function submitStep3() {
+  state.dimensions = [...window._selectedDims];
+  if (!state.dimensions.length) { state.dimensions = ['Product features & feature parity', 'Pricing & monetization models']; }
+  confirmCard(window._step3Card, `${state.dimensions.length} dimensions selected`);
+  state.currentStep = 3;
+  setTimeout(showStep4, 400);
+}
+
+// ─────────────────────────────────────────────
+// STEP 4 — DEPTH
+// ─────────────────────────────────────────────
+const DEPTH_OPTS = [
+  {
+    id: 'quick',
+    title: 'Quick Scan',
+    desc: '~5 min  ·  Key signals per competitor, breadth over depth. Good for a first pass.',
+  },
+  {
+    id: 'standard',
+    title: 'Standard',
+    desc: '~15 min  ·  Full profiles, feature comparison matrix, all claims verified.',
+  },
+  {
+    id: 'deep',
+    title: 'Deep Dive',
+    desc: '~30 min  ·  Exhaustive sourcing, triple verification pass, data gaps flagged explicitly.',
+  },
+];
+
+function showStep4() {
+  updateProgress(3);
+  window._selectedDepth = 'standard';
+
+  const optsHtml = DEPTH_OPTS.map(o => `
+    <div class="depth-opt ${o.id === 'standard' ? 'selected' : ''}" id="depth_${o.id}" onclick="selectDepth('${o.id}')">
+      <div class="radio-dot"><div class="radio-inner"></div></div>
+      <div>
+        <div class="depth-title">${o.title}</div>
+        <div class="depth-desc">${o.desc}</div>
+      </div>
+    </div>
+  `).join('');
+
+  const card = appendCard(`
+    <div class="step-card">
+      <div class="avatar">⚡</div>
+      <div class="card">
+        <h3>Step 4 · How deep should we go?</h3>
+        <p class="desc">All modes search the same 5 sources (web, competitor sites, internal Slack, internal docs, InternalDataWarehouse). They differ in query depth and verification rigor.</p>
+        <div class="depth-group" id="depthGroup">${optsHtml}</div>
+        <div class="btn-row">
+          <button class="btn-secondary" onclick="goBack(3)">← Back</button>
+          <button class="btn-primary" onclick="submitStep4()">🚀  Generate Report</button>
+        </div>
+      </div>
+    </div>
+  `);
+  window._step4Card = card;
+}
+
+function selectDepth(id) {
+  document.querySelectorAll('.depth-opt').forEach(el => el.classList.remove('selected'));
+  document.getElementById('depth_' + id).classList.add('selected');
+  window._selectedDepth = id;
+}
+
+function submitStep4() {
+  state.depth = DEPTH_OPTS.find(o => o.id === window._selectedDepth).title;
+  confirmCard(window._step4Card, state.depth);
+  state.currentStep = 4;
+  setTimeout(showGenerating, 400);
+}
+
+// ─────────────────────────────────────────────
+// GENERATING
+// ─────────────────────────────────────────────
+function showGenerating() {
+  updateProgress(4);
+  document.getElementById('stepTabLabel').textContent = 'Generating Report';
+  document.getElementById('stepTabRight').textContent = 'In Progress...';
+
+  const sources = [
+    { name: 'Web search (news & product pages)', status: 'running', label: '⏳  Searching...' },
+    { name: `Website fetch (${state.competitors.length} competitor sites)`, status: 'waiting', label: '⏳  Waiting' },
+    { name: 'Internal Slack (internal-slack-search)', status: 'waiting', label: '⏳  Waiting' },
+    { name: 'Internal docs (internal-wiki-search)', status: 'waiting', label: '⏳  Waiting' },
+    { name: 'Internal metrics (InternalDataWarehouse)', status: 'waiting', label: '⏳  Waiting' },
+  ];
+
+  const srcHtml = sources.map((s, i) => `
+    <div class="source-row" id="srcRow${i}">
+      <span class="source-name">${s.name}</span>
+      <span class="source-status ${s.status}" id="srcStatus${i}">${s.label}</span>
+    </div>
+  `).join('');
+
+  appendCard(`
+    <div class="step-card">
+      <div class="avatar">🤖</div>
+      <div class="card">
+        <h3>Generating your report...</h3>
+        <p class="desc">Researching <strong style="color:#ccc">${state.topic}</strong>  ·  ${state.competitors.length} competitors  ·  ${state.dimensions.length} dimensions  ·  ${state.depth}</p>
+        <div class="gen-progress-bg"><div class="gen-progress-fill" id="genProgress" style="width:5%"></div></div>
+        <div class="source-list">${srcHtml}</div>
+        <div style="text-align:center; margin-top: 10px; font-size: 11px; color: #444; cursor: pointer;">Cancel</div>
+      </div>
+    </div>
+  `);
+
+  // Simulate progress
+  const updates = [
+    { delay: 600,  src: 0, label: '✓  Done', cls: 'done', fill: '20%' },
+    { delay: 1400, src: 1, label: '⏳  Fetching...', cls: 'running', fill: '35%' },
+    { delay: 2400, src: 1, label: '✓  Done', cls: 'done', fill: '50%' },
+    { delay: 2600, src: 2, label: '⏳  Fetching...', cls: 'running', fill: '55%' },
+    { delay: 3400, src: 2, label: '✓  Done', cls: 'done', fill: '68%' },
+    { delay: 3500, src: 3, label: '⏳  Fetching...', cls: 'running', fill: '72%' },
+    { delay: 4200, src: 3, label: '✓  Done', cls: 'done', fill: '82%' },
+    { delay: 4400, src: 4, label: '⏳  Fetching...', cls: 'running', fill: '86%' },
+    { delay: 5000, src: 4, label: '✓  Done', cls: 'done', fill: '92%' },
+    { delay: 5500, src: -1, label: '', cls: '', fill: '100%' },
+  ];
+
+  for (const u of updates) {
+    setTimeout(() => {
+      if (u.src >= 0) {
+        const el = document.getElementById(`srcStatus${u.src}`);
+        if (el) { el.textContent = u.label; el.className = `source-status ${u.cls}`; }
+      }
+      document.getElementById('genProgress').style.width = u.fill;
+      if (u.fill === '100%') setTimeout(showResults, 600);
+    }, u.delay);
+  }
+}
+
+// ─────────────────────────────────────────────
+// RESULTS
+// ─────────────────────────────────────────────
+function showResults() {
+  document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('stepTabLabel').textContent = 'Report Ready';
+  document.getElementById('stepTabRight').textContent = '✓  Complete';
+
+  const competitor1 = state.competitors[0] || 'YouTube';
+  const competitor2 = state.competitors[1] || 'Spotify';
+
+  appendCard(`
+    <div class="step-card">
+      <div class="avatar">📊</div>
+      <div class="card">
+        <h3>Your report is ready</h3>
+        <p class="desc">Competitive Analysis: <strong style="color:#ccc">${state.topic}</strong> — ${state.depth} · ${state.competitors.length} competitors · ${state.dimensions.length} dimensions</p>
+        <div class="report-preview">
+          <h4>Executive Summary</h4>
+          <p>The <strong>${state.topic}</strong> space is rapidly converging around ${competitor1} and ${competitor2} as the dominant players. Key battlegrounds are ${state.dimensions[0] || 'product features'} and ${state.dimensions[1] || 'monetization'}, where incumbents are moving fast but the incumbent has structural advantages in content depth and personalization.</p>
+          <h4>🟢 ${competitor1} — Strong</h4>
+          <p><span class="tag platform">[Platform-direct]</span>${competitor1} reported 30% YoY growth in its core ${state.topic} segment (${competitor1} Earnings, Q1 2026). Investment trajectory is accelerating with $2B allocated to AI features this fiscal year.</p>
+          <h4>🟡 ${competitor2} — Moderate</h4>
+          <p><span class="tag analyst">[Analyst]</span>Nielsen (March 2026) ranks ${competitor2} #2 in time-spent for ${state.topic}, though monetization lags ${competitor1} by ~35% per user. Pricing pressure from free tiers is a recurring theme in internal Slack discussions.</p>
+          <h4>Gaps & Opportunities</h4>
+          <p>Our differentiated opportunity lies at the intersection of ${state.dimensions[0] || 'product features'} + personalization depth — an area where no competitor has a complete solution. The whitespace is clearest in ${state.dimensions[2] || 'user experience'} for power users.</p>
+          <p style="color:#555; font-size:11px; margin-top:8px;">⚠ What we couldn't verify: ${competitor2} didn't disclose per-market breakdown. Using engagement signals as proxy (labeled as estimate).</p>
+        </div>
+        <div class="report-export">
+          <button class="btn-primary" style="flex:1" onclick="publishDoc()">📄  Publish to Google Doc</button>
+          <button class="btn-secondary" onclick="downloadMd()">⬇  Download .md</button>
+          <button class="btn-secondary" onclick="newAnalysis()">↺  New Analysis</button>
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+function publishDoc() {
+  alert('In the real app, this publishes to Google Docs and returns a shareable link.\n\nThis is a prototype — the actual skill does this automatically!');
+}
+function downloadMd() {
+  alert('In the real app, this saves the full markdown report to ./reports/[topic]-[date].md');
+}
+function newAnalysis() {
+  document.getElementById('feed').innerHTML = '';
+  state.currentStep = 0;
+  state.topic = '';
+  state.competitors = [];
+  state.dimensions = [];
+  state.depth = 'Standard';
+  showStep1();
+}
+
+// ─────────────────────────────────────────────
+// BACK NAVIGATION
+// ─────────────────────────────────────────────
+function goBack(fromStep) {
+  // Simple: scroll up to previous card — in real app would be full state restore
+  const cards = document.querySelectorAll('.step-card');
+  if (cards.length > 1) {
+    cards[cards.length - 1].remove();
+    cards[cards.length - 2].classList.remove('confirmed');
+  }
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+showStep1();
+</script>
+</body>
+</html>
