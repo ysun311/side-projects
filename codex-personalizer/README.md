@@ -17,23 +17,24 @@ The product idea: help people customize Codex in minutes instead of waiting for 
 
 ## Run locally
 
-If you are viewing this on GitHub and want to try the prototype on your own computer:
+Install Node.js 20.9 or newer and `pnpm` before setting up the project. On macOS with Homebrew:
+
+```bash
+brew install node pnpm
+node --version
+pnpm --version
+```
+
+Then clone the repository, install its dependencies, and start the development server:
 
 ```bash
 git clone https://github.com/ysun311/side-projects.git
 cd side-projects/codex-personalizer
-corepack enable
 pnpm install
 pnpm dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000).
-
-You will need Node.js installed. If `pnpm` is unavailable after `corepack enable`, install it with:
-
-```bash
-npm install -g pnpm
-```
+Open the local URL printed in Terminal, normally [http://localhost:3000](http://localhost:3000).
 
 ### Local preview helper
 
